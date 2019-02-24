@@ -1,0 +1,198 @@
+---
+title: "HW3"
+author: "Guanren Wang"
+date: "2019-2-22"
+output: word_document
+---
+#1.(a).
+```{r }
+x<-c(1.77, -0.23, 2.76, 3.80, 3.47, 56.75, -1.34, 4.24, -2.44, 3.29, 3.71, -2.40, 4.53, -0.07, -1.05, -13.87, -2.53, -1.75, 0.27, 43.21)
+theta<-seq(-20,60,0.01)
+plotloglike<- function(theta,x) {
+  y<-matrix(0,nrow = length(theta),ncol = length(x))
+  for (i in 1:length(theta)) {
+    for (j in 1:length(x)) {
+      y[i,j]<- -log(pi)-log(1+(theta[i]-x[j])^2)
+    }
+  }
+  y<-apply(y, 1, sum)
+  plot(theta,y)
+}
+plotloglike(theta,x)
+```
+
+#(b).
+```{r }
+prime<- function(theta) {
+  x<-c(1.77, -0.23, 2.76, 3.80, 3.47, 56.75, -1.34, 4.24, -2.44, 3.29, 3.71, -2.40, 4.53, -0.07, -1.05, -13.87, -2.53, -1.75, 0.27, 43.21)
+  sum((2*x-theta)/(1+(x-theta)^2)) }
+
+#use bisection method to calculate maximum
+bisection <- function(f_prime, int, precision = 1e-7)
+{
+  # ::: f_prime is the function for the first derivative
+  # ::: of f, int is an interval such as c(0,1) which 
+  # ::: denotes the domain
+  
+  N <- ceiling(log(precision/(diff(int)))/log(.5))
+  f_prime_a <- f_prime(int[1] + diff(int)/2)
+  for (i in 1:N)
+  {
+    if(f_prime_a > 0)
+    {
+       int[2] = int[1] + diff(int)/2
+    } else
+      if(f_prime_a < 0)
+      {
+       int[1] = int[1] + diff(int)/2
+      } else
+        if(f_prime_a == 0) return(int)
+        
+    f_prime_a <- f_prime(int[1] + diff(int)/2)
+  }
+  int
+}
+bisection(prime,c(-1,1))
+bisection(prime,c(-2,-1))
+bisection(prime,c(-3,3))
+
+#Newton's Method
+newton <- function(f_prime, f_dbl, precision = 1e-6, start)
+{
+  # ::: f_prime is first derivative function
+  # ::: f_dbl is second derivitive function
+  # ::: start is starting 'guess'
+  
+  x_old <- start
+  x_new <- x_old-f_prime(x_old)/f_dbl(x_old)
+  
+  i <- 1 # ::: use 'i' to print iteration number
+  print(paste0("Iteration ", i, "; Estimate = ", x_new) )
+  while (abs(x_new-x_old) > precision)
+  {
+    x_old <- x_new
+    x_new <- x_old-f_prime(x_old)/f_dbl(x_old) 
+    
+    # ::: keep track of iteration history
+    print(paste0("Iteration ", i+1, "; Estimate = ", x_new) )
+    i <- i + 1
+  }
+  x_new
+}
+
+#secant method
+secant <- function(f_prime, start1, start2, precision = 1e-6)
+{
+  # f_prime is first derivative function
+  # start1 and star2 are starting guesses
+  
+  x_old1 = start1
+  x_old2 = start2
+  x_new = x_old2-f_prime(x_old2)*((x_old2-x_old1)/(f_prime(x_old2)-f_prime(x_old1))) 
+  
+  i <- 1 # i is iteration number
+  print(paste0("Iteration ", i, "; Estimate = ", x_new) )
+  while (abs(x_new-x_old2) > precision)
+  {
+    x_old1 = x_old2
+    x_old2 = x_new
+    x_new = x_old2-f_prime(x_old2)*((x_old2-x_old1)/(f_prime(x_old2)-f_prime(x_old1)))     
+    # ::: keep track of iteration history
+    print(paste0("Iteration ", i+1, "; Estimate = ", x_new) )
+    i <- i + 1
+  }
+  x_new
+
+}
+```
+
+#2.
+```{r }
+#use gradient descent to calculate the maximum
+
+f = function(x,y) (x-2)^4+(x-2*y)^2
+f_gradient = function(x, y) c((4*(x-2)^3+2*(x-2*y)), (-4*(x-2*y)))
+
+#load golden section function
+golden <- function(f, int, precision = 1e-6)
+{
+  # ::: This function implements the golden section search for a 
+  # ::: *minimum* for the function 'f' on the range [int]
+  # ::: with precision no greater than 'precision'.
+  # ::: Note: 'int' is an interval such as c(2,3).
+  # ::: If you want to *maximize*, multiply your function by -1.
+  
+  rho <- (3-sqrt(5))/2 # ::: Golden ratio
+  # ::: Work out first iteration here
+  f_a <- f(int[1] + rho*(diff(int)))
+  f_b <- f(int[2] - rho*(diff(int)))
+  ### How many iterations will we need to reach the desired precision?
+  N <- ceiling(log(precision/(diff(int)))/log(1-rho))
+  for (i in 1:N)                    # index the number of iterations
+  {
+f_a <- f(int[1] + rho*(diff(int)))
+  f_b <- f(int[2] - rho*(diff(int)))
+    if (f_a < f_b)  
+    {
+      int[2] = int[2] - rho*(diff(int))
+
+    } else{
+      if (f_a >= f_b)
+      {
+       int[1] = int[1] + rho*(diff(int))
+      
+
+	      } }
+  }
+  int
+}
+
+#write gradient descent function with steepest step for each iteration
+gradient_descent<-function(f,f_gradient,start_point,precision=1e-6) {
+  #author: Guanren (Grandeur) Wang
+  #f is original function
+  #f_gradient is the gradient of f
+  #start_point is a vector to give the start value of algorithm
+  #precision is the difference of f value between i and i+1 iterations
+  
+  #each descent step is optimized by golden section method
+  #this function is used to calculate minimum, for maximum, you can plus f by -1
+  
+  m = start_point
+  fval_o<-f(m[1],m[2])
+  i=1
+  
+  #the first alpha did calculated by golden section method, but manually input
+  alpha=0.01
+  temporary<-m-alpha*f_gradient(m[1],m[2])
+  
+  #define function g which will be used to calculate the steepest step
+  g<-function(alpha) {f((m-alpha*f_gradient(m[1],m[2]))[1],(m-alpha*f_gradient(m[1],m[2]))[2])}
+  
+  #update function value 
+  fval_n=f(temporary[1],temporary[2])
+  
+  while (abs(fval_n-fval_o)>precision) {
+    
+    #count iterations
+    i=i+1
+    
+    #calculate the steepest step by golden section method (with precision of 1e-6)
+    alpha=golden(g,c(0,10))[1]
+    
+    #update the pair of points for next iteration
+    m<-m-alpha*f_gradient(m[1],m[2])
+    
+    #update function
+    fval_o=fval_n
+    fval_n=f(m[1],m[2])
+  }
+  
+  #output iteration times, minimum values, and corresponding values of x1 and x2
+  a<-c('Iteration times:','Minimum value:','x1:','x2:')
+  b<-c(i,fval_n,m[1],m[2])
+  paste(a,b)
+}
+
+gradient_descent(f,f_gradient,c(0,3),1e-10)
+```
